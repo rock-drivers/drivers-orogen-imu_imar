@@ -48,6 +48,16 @@ bool Task::configureHook()
 	 return false;
      }
      
+     reading.invalidate();
+     reading.position.setZero();
+     reading.velocity.setZero();
+     reading.orientation = Eigen::Quaterniond::Identity();
+     reading.angular_velocity.setZero();
+     
+     sensors.acc.setZero();
+     sensors.gyro.setZero();
+     sensors.mag.setZero();
+     
     return true;
 }
 bool Task::startHook()
@@ -77,6 +87,7 @@ bool Task::startHook()
 	}
     }
     
+    std::cout<<"iMAR Synchronized with device\n";
     timestamp_estimator->reset();
     
     return true;
@@ -85,10 +96,8 @@ void Task::updateHook()
 {
     int byteRead, byteStored;
     unsigned char values[PKG_SIZE];
-    base::samples::IMUSensors sensors;
-    base::samples::RigidBodyState reading;
     
-    reading.invalidate();
+    
     
     /** The driver in synchronized, starting to read values **/
     if ((byteRead = imar_driver.read_serial(values, sizeof(values))) != ERROR)
@@ -97,12 +106,14 @@ void Task::updateHook()
 	base::Time recvts = base::Time::now();
 	
 	/** Store the read values in the Circular Buffer **/
-	    imar_driver.cbWritePckg (byteRead, values);
+	imar_driver.cbWritePckg (byteRead, values);
 	    
 	/** Check the status of the Driver Circular Buffer **/
 	if ((byteStored = imar_driver.cbNumberElements()) < PKG_SIZE)
 	{
 	    unsigned char mbyte[1];
+	    
+//  	    std::cout<<byteStored<<" elements in the Buffer\n";
 
 	    /** Read a byte in the stream **/
 	    if ((byteRead = imar_driver.read_serial(mbyte, sizeof(mbyte))) != ERROR)
@@ -114,31 +125,55 @@ void Task::updateHook()
 	else
 	{    
 	    int packet_counter = imar_driver.getPacketCounter();
+	    unsigned char buffer[PKG_SIZE];
+	    unsigned int crc;
+	    
+// 	    std::cout<<byteStored<<" elements in the Buffer\n";
 	    
 	    base::Time ts = timestamp_estimator->update(recvts,packet_counter);
 	    timeout_counter = 0;
 	    
+	    /** Compute the checksum **/
+	    imar_driver.cbCopyPckg(buffer, sizeof(buffer));
+	    crc = imar_driver.Crc16_0(buffer, sizeof(buffer));
+//  	    printf("CRC: %X\n", crc>>24);
+	    
 	    /** Read the IMU inertial Values **/
-	    imar_driver.cbReadValues();
-	
-// 	    imar_driver.cbPrintValues();
-	    
-	    /** Write the values in the data object **/
-	    sensors.time = ts;
-	    sensors.acc = imar_driver.getAccelerometers();
-	    sensors.gyro = imar_driver.getGyroscopes();
-	    sensors.mag = base::Vector3d::Ones() * base::NaN<double>();
-	    
-	    reading.time = ts;
-	    reading.orientation = imar_driver.getAttitude();
-	    reading.angular_velocity = sensors.gyro;
-	    
-	    
-	    /** Write in the Ports **/
-	    _orientation_samples.write(reading);
-	    _calibrated_sensors.write(sensors);
-	    
-	    _timestamp_estimator_status.write(timestamp_estimator->getStatus());
+	    if(imar_driver.cbReadValues() == OK)
+	    {
+ 		/** If checksum is correct **/
+		if((crc>>24) == buffer[PKG_SIZE-1])
+		{
+// 		    imar_driver.cbPrintValues();
+		    
+	// 	    imar_driver.cbCalculateAccIntegration((float)2*PI*_sampling_rate.value());
+		    
+		    /** Write the values in the data object **/
+		    sensors.time = ts;
+		    sensors.acc = imar_driver.getAccelerometers();
+		    sensors.gyro = imar_driver.getGyroscopes();
+		    sensors.mag = base::Vector3d::Ones() * base::NaN<double>();
+		    
+		    reading.time = ts;
+		    reading.orientation = imar_driver.getAttitude();
+		    reading.velocity = imar_driver.getVelocity();
+		    reading.position = imar_driver.getPosition();
+		    reading.angular_velocity = sensors.gyro;
+		}
+		
+		
+		/** Write in the Ports **/
+		_orientation_samples.write(reading);
+		_calibrated_sensors.write(sensors);
+		
+		_timestamp_estimator_status.write(timestamp_estimator->getStatus());
+	    }
+	    else
+	    {
+		std::cerr << "Error in stream at "<<ts<< std::endl;
+		imar_driver.cbReset();
+ 		this->startHook();
+	    }
 	}
     }
     

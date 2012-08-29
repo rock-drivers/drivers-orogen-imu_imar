@@ -30,6 +30,8 @@ namespace imar {
 	
 	int timeout_counter;
 	imar::iVRU_BB imar_driver;
+	base::samples::IMUSensors sensors;
+	base::samples::RigidBodyState reading;
 	aggregator::TimestampEstimator* timestamp_estimator;
 
     public:

@@ -18,7 +18,7 @@ Orocos::Process.run 'imar_driver' do |p|
     driver.configure
     driver.start
 
-     reader = driver.orientation_samples.reader(:type => :buffer, :size => 100)
+#     reader = driver.orientation_samples.reader(:type => :buffer, :size => 100)
     loop do        
 #  	while sample = reader.read_new
 #            print("#{sample.time.to_f} #{sample.orientation.x} #{sample.orientation.y} #{sample.orientation.z} #{sample.orientation.w}\r\n")
