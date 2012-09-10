@@ -16,6 +16,6 @@
   <depend package="base/types" />
   <depend package="tools/logger" />
   <depend package="drivers/imar" />
-  <depends package="drivers/orogen/aggregator" />
+  <depend package="drivers/orogen/aggregator" />
   <rosdep name="eigen3" />
 </package>
