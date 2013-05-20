@@ -42,7 +42,7 @@ bool Task::configureHook()
     
      
      /** Open the communication port which is the port to acquire the inertial values **/
-     if (imar_driver.init_serial(_com_port.value().c_str(),_baudrate.value()) == ERROR)
+     if (!imar_driver.init_serial(_com_port.value().c_str(),_baudrate.value()))
      {
 	 std::cerr << "Error opening device '" << _com_port.value() << "'" << std::endl;
 	 return false;
@@ -71,7 +71,7 @@ bool Task::startHook()
     /** Synchronize driver with the stream comming from the device **/
     while (!imar_driver.cbIsSynchronized())
     {
-	if ((byteRead = imar_driver.read_serial(values, sizeof(values))) != ERROR)
+	if ((byteRead = imar_driver.read_serial(values, sizeof(values))))
 	{
 // 	    std::cout<<"byteRead: "<<byteRead<<"\n";
 	    
@@ -100,7 +100,7 @@ void Task::updateHook()
     
     
     /** The driver in synchronized, starting to read values **/
-    if ((byteRead = imar_driver.read_serial(values, sizeof(values))) != ERROR)
+    if ((byteRead = imar_driver.read_serial(values, sizeof(values))))
     {
 	/** Time of receiving **/
 	base::Time recvts = base::Time::now();
@@ -116,7 +116,7 @@ void Task::updateHook()
 //  	    std::cout<<byteStored<<" elements in the Buffer\n";
 
 	    /** Read a byte in the stream **/
-	    if ((byteRead = imar_driver.read_serial(mbyte, sizeof(mbyte))) != ERROR)
+	    if ((byteRead = imar_driver.read_serial(mbyte, sizeof(mbyte))))
 	    {
 		/** Store the read values in the Circular Buffer **/
 		imar_driver.cbWritePckg (byteRead, mbyte);
@@ -139,7 +139,7 @@ void Task::updateHook()
 //  	    printf("CRC: %X\n", crc>>24);
 	    
 	    /** Read the IMU inertial Values **/
-	    if(imar_driver.cbReadValues() == OK)
+	    if(imar_driver.cbReadValues())
 	    {
  		/** If checksum is correct **/
 		if((crc>>24) == buffer[PKG_SIZE-1])
