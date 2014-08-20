@@ -54,24 +54,3 @@ task_context "Task" do
 
 end
 
-
-# Declares a deployment, i.e. an actual executable that contains various tasks.
-deployment "imar_test" do
-    # This is a test deployment that should not be installed
-    do_not_install
-
-    add_default_logger
-
-    # Declares it as periodic, with a period of 10ms
-    task("imar", "Task").
-        periodic(0.01)
-end
-
-deployment "imar_driver" do
-
-    add_default_logger
-
-    # Declares it as periodic, with a period of 10ms
-    task("imar", "Task").
-        periodic(0.01)
-end
