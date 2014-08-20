@@ -1,11 +1,11 @@
-name "imar"
+name "imu_imar"
 # Optionally declare the version number
 # version "0.1"
 
 # If new data types need to be defined, they have to be put in a separate C++
 # header, and this header will be loaded here
-# import_types_from "imarType.hpp"
-using_library 'imar'
+# import_types_from "imu_imarType.hpp"
+using_library 'imu_imar'
 using_library "aggregator"
 
 # If the component/deployments use data types that are defined in other oroGen
@@ -16,7 +16,7 @@ import_types_from "aggregator"
 # Declare a new task context (i.e., a component)
 #
 # The corresponding C++ class can be edited in tasks/Task.hpp and
-# tasks/Task.cpp, and will be put in the imar namespace.
+# tasks/Task.cpp, and will be put in the imu_imar namespace.
 task_context "Task" do
 
     #******************************

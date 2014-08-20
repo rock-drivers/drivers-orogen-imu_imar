@@ -2,7 +2,7 @@
 
 #include "Task.hpp"
 
-using namespace imar;
+using namespace imu_imar;
 
 Task::Task(std::string const& name, TaskCore::TaskState initial_state)
     : TaskBase(name, initial_state)
@@ -42,7 +42,7 @@ bool Task::configureHook()
     
      
      /** Open the communication port which is the port to acquire the inertial values **/
-     if (!imar_driver.init_serial(_com_port.value().c_str(),_baudrate.value()))
+     if (!imu_imar_driver.init_serial(_com_port.value().c_str(),_baudrate.value()))
      {
 	 std::cerr << "Error opening device '" << _com_port.value() << "'" << std::endl;
 	 return false;
@@ -69,20 +69,20 @@ bool Task::startHook()
         return false;
     
     /** Synchronize driver with the stream comming from the device **/
-    while (!imar_driver.cbIsSynchronized())
+    while (!imu_imar_driver.cbIsSynchronized())
     {
-	if ((byteRead = imar_driver.read_serial(values, sizeof(values))))
+	if ((byteRead = imu_imar_driver.read_serial(values, sizeof(values))))
 	{
 // 	    std::cout<<"byteRead: "<<byteRead<<"\n";
 	    
 	    /** Store the read values in the Circular Buffer **/
-	    imar_driver.cbWritePckg (byteRead, values);
+	    imu_imar_driver.cbWritePckg (byteRead, values);
 // 	    std::cout<<"Writen "<<byteRead<<" bytes in Circular Buffer\n";
 
-	    if (imar_driver.cbIsFull())
+	    if (imu_imar_driver.cbIsFull())
 	    {
 		/**Synchronize with the starting byte**/
-		imar_driver.cbSynchronize();
+		imu_imar_driver.cbSynchronize();
 	    }
 	}
     }
@@ -100,31 +100,31 @@ void Task::updateHook()
     
     
     /** The driver in synchronized, starting to read values **/
-    if ((byteRead = imar_driver.read_serial(values, sizeof(values))))
+    if ((byteRead = imu_imar_driver.read_serial(values, sizeof(values))))
     {
 	/** Time of receiving **/
 	base::Time recvts = base::Time::now();
 	
 	/** Store the read values in the Circular Buffer **/
-	imar_driver.cbWritePckg (byteRead, values);
+	imu_imar_driver.cbWritePckg (byteRead, values);
 	    
 	/** Check the status of the Driver Circular Buffer **/
-	if ((byteStored = imar_driver.cbNumberElements()) < PKG_SIZE)
+	if ((byteStored = imu_imar_driver.cbNumberElements()) < PKG_SIZE)
 	{
 	    unsigned char mbyte[1];
 	    
 //  	    std::cout<<byteStored<<" elements in the Buffer\n";
 
 	    /** Read a byte in the stream **/
-	    if ((byteRead = imar_driver.read_serial(mbyte, sizeof(mbyte))))
+	    if ((byteRead = imu_imar_driver.read_serial(mbyte, sizeof(mbyte))))
 	    {
 		/** Store the read values in the Circular Buffer **/
-		imar_driver.cbWritePckg (byteRead, mbyte);
+		imu_imar_driver.cbWritePckg (byteRead, mbyte);
 	    }
 	}
 	else
 	{    
-	    int packet_counter = imar_driver.getPacketCounter();
+	    int packet_counter = imu_imar_driver.getPacketCounter();
 	    unsigned char buffer[PKG_SIZE];
 	    unsigned int crc;
 	    
@@ -134,30 +134,30 @@ void Task::updateHook()
 	    timeout_counter = 0;
 	    
 	    /** Compute the checksum **/
-	    imar_driver.cbCopyPckg(buffer, sizeof(buffer));
-	    crc = imar_driver.Crc16_0(buffer, sizeof(buffer));
+	    imu_imar_driver.cbCopyPckg(buffer, sizeof(buffer));
+	    crc = imu_imar_driver.Crc16_0(buffer, sizeof(buffer));
 //  	    printf("CRC: %X\n", crc>>24);
 	    
 	    /** Read the IMU inertial Values **/
-	    if(imar_driver.cbReadValues())
+	    if(imu_imar_driver.cbReadValues())
 	    {
  		/** If checksum is correct **/
 		if((crc>>24) == buffer[PKG_SIZE-1])
 		{
-// 		    imar_driver.cbPrintValues();
+// 		    imu_imar_driver.cbPrintValues();
 		    
-	// 	    imar_driver.cbCalculateAccIntegration((float)2*PI*_sampling_rate.value());
+	// 	    imu_imar_driver.cbCalculateAccIntegration((float)2*PI*_sampling_rate.value());
 		    
 		    /** Write the values in the data object **/
 		    sensors.time = ts;
-		    sensors.acc = imar_driver.getAccelerometers();
-		    sensors.gyro = imar_driver.getGyroscopes();
+		    sensors.acc = imu_imar_driver.getAccelerometers();
+		    sensors.gyro = imu_imar_driver.getGyroscopes();
 		    sensors.mag = base::Vector3d::Ones() * base::NaN<double>();
 		    
 		    reading.time = ts;
-		    reading.orientation = imar_driver.getAttitude();
-		    reading.velocity = imar_driver.getVelocity();
-		    reading.position = imar_driver.getPosition();
+		    reading.orientation = imu_imar_driver.getAttitude();
+		    reading.velocity = imu_imar_driver.getVelocity();
+		    reading.position = imu_imar_driver.getPosition();
 		    reading.angular_velocity = sensors.gyro;
 		}
 		
@@ -171,7 +171,7 @@ void Task::updateHook()
 	    else
 	    {
 		std::cerr << "Error in stream at "<<ts<< std::endl;
-		imar_driver.cbReset();
+		imu_imar_driver.cbReset();
  		this->startHook();
 	    }
 	}
@@ -187,7 +187,7 @@ void Task::stopHook()
 {
     TaskBase::stopHook();
     
-    imar_driver.close_port();
+    imu_imar_driver.close_port();
     
     timestamp_estimator->reset();
 }
@@ -195,7 +195,7 @@ void Task::cleanupHook()
 {
     TaskBase::cleanupHook();
     
-    imar_driver.close_port();
+    imu_imar_driver.close_port();
     
     delete timestamp_estimator;
     timestamp_estimator = NULL;

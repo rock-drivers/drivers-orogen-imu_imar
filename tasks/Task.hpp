@@ -4,10 +4,10 @@
 #define IMAR_TASK_TASK_HPP
 
 #include <aggregator/TimestampEstimator.hpp>
-#include <imar/imar.hpp>
-#include "imar/TaskBase.hpp"
+#include <imu_imar/Imar.hpp>
+#include "imu_imar/TaskBase.hpp"
 
-namespace imar {
+namespace imu_imar {
 
     /*! \class Task 
      * \brief The task context provides and requires services. It uses an ExecutionEngine to perform its functions.
@@ -18,7 +18,7 @@ namespace imar {
      * The name of a TaskContext is primarily defined via:
      \verbatim
      deployment 'deployment_name'
-         task('custom_task_name','imar::Task')
+         task('custom_task_name','imu_imar::Task')
      end
      \endverbatim
      *  It can be dynamically adapted when the deployment is called with a prefix argument. 
@@ -29,7 +29,7 @@ namespace imar {
     protected:
 	
 	int timeout_counter;
-	imar::iVRU_BB imar_driver;
+	imu_imar::iVRU_BB imu_imar_driver;
 	base::samples::IMUSensors sensors;
 	base::samples::RigidBodyState reading;
 	aggregator::TimestampEstimator* timestamp_estimator;
@@ -39,7 +39,7 @@ namespace imar {
          * \param name Name of the task. This name needs to be unique to make it identifiable via nameservices.
          * \param initial_state The initial TaskState of the TaskContext. Default is Stopped state.
          */
-        Task(std::string const& name = "imar::Task", TaskCore::TaskState initial_state = Stopped);
+        Task(std::string const& name = "imu_imar::Task", TaskCore::TaskState initial_state = Stopped);
 
         /** TaskContext constructor for Task 
          * \param name Name of the task. This name needs to be unique to make it identifiable for nameservices. 

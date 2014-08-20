@@ -10,7 +10,7 @@ ENV['PKG_CONFIG_PATH'] = "#{File.expand_path("..", File.dirname(__FILE__))}/buil
 
 Orocos.initialize
 
-Orocos::Process.run 'imar::Task'=> 'imu_imar' do
+Orocos::Process.run 'imu_imar::Task'=> 'imu_imar' do
     driver = p.task 'imu_imar'
     Orocos.log_all_ports
 
